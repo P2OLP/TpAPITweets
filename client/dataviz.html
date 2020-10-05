@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title></title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+</head>
+<body id="couleur">
+<h1 style="color: #FF6384">Salut visionnage</h1>
+<canvas id="monGraphique"></canvas>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var ctx = document.getElementById('monGraphique').getContext('2d');
+    var socket = io();
+    fetch('./api/capteurs/Hum')
+        .then(
+            function (response) {
+                if (response.status !== 200) {
+                    console.log('Looks like there was a problem. Status Code: ' +
+                        response.status);
+                    return;
+                }
+                response.json().then(function (data) {
+                    console.log(data);
+                    var xs = [];
+                    var ys = [];
+                    data.forEach(function (valeurs) {
+                        xs.push(valeurs.timestamp);
+                        ys.push(valeurs.value);
+                    });
+                    var chart = new Chart(ctx, {
+                        // Type de graphique créer
+                        type: 'line',
+                        // Données de la database
+                        data: {
+                            labels: xs,
+                            datasets: [{
+                                label: 'My First dataset',
+                                backgroundColor: 'rgb(255, 99, 132)',
+                                borderColor: 'rgb(255, 99, 132)',
+                                data: ys
+                            }]
+                        },
+                        // Options de configuration
+                        options: {}
+                    });
+                    console.log(chart);
+
+                    socket.on('humChange', function (msg) {
+                        console.log(msg);
+                        chart.data.labels.push(Date.now());
+                        chart.data.data.push(msg.newHum);
+                        chart.update();
+                    });
+                });
+            }
+        )
+        .catch(function (err) {
+            console.log('Fetch Error :-S', err);
+        });
+    socket.on('CouleurChange', function (msg) {
+        console.log(msg);
+        document.getElementById("fondTweet").style.backgroundColor = msg.newcolor;
+    });
+    socket.on('tempChange', function (msg) {
+        console.log(msg);
+    });
+
+</script>
+</body>
+</html>
